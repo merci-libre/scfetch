@@ -1,4 +1,5 @@
 #include <dirent.h>
+#include <pci/pci.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,7 +40,7 @@ int findhomedir(struct directories *directory) {
   // printf("finding home folder...\n");
 
   if (homed == NULL) {
-    printf("ERROR: Home directory does not exist \n");
+    perror("ERROR: Home directory does not exist \n");
     exit(1);
   }
   closedir(homed);
@@ -61,7 +62,8 @@ int find_prompts_path(struct directories *directory) {
   DIR *prompts_exist = opendir(directory->prompt_path);
 
   if (prompts_exist == NULL) {
-    printf("prompts folder does not exist");
+    perror("prompts folder does not exist");
+    exit(1);
   }
   closedir(prompts_exist);
   // printf("prompts folder located at: %s\n", directory->prompt_path);
@@ -118,7 +120,7 @@ void free_mem(char **filenames, int size) {
 
 char *choose_prompt(char **filenames, int size) {
   if (size == 0) {
-    printf("File is not accessible.\n");
+    perror("File is not accessible.\n");
     return NULL;
   }
   int random_index = rand() % size;
@@ -150,6 +152,48 @@ char *filetoarray(struct directories *directory, struct numbers *integer) {
   return chosenfile;
 }
 
+int getCPUinfo() {
+  FILE *cpuinfo = fopen("/proc/cpuinfo", "r");
+  if (cpuinfo == NULL) {
+    perror("Error opening /proc/cpuinfo, uh-oh.");
+    return 1;
+  }
+
+  char line[1024];
+  while (fgets(line, sizeof(line), cpuinfo)) {
+    if (strstr(line, "model name") != NULL) {
+      char *modelname = strstr(line, ":");
+      if (modelname != NULL) {
+        modelname += 2;
+        printf("CPU Model: %s\n", modelname);
+        break;
+      }
+    }
+  }
+  fclose(cpuinfo);
+  return 0;
+}
+
+/* does not work, keep commented out.
+int getGPUinfo() {
+  struct pci_access *pciaccess;
+  struct pci_dev *pcidev;
+
+  pciaccess = pci_alloc();
+  pci_init(pciaccess);
+  pci_scan_bus(pciaccess);
+
+  for (pcidev = pciaccess->devices; pcidev; pcidev->next++) {
+    pci_fill_info(pcidev, PCI_FILL_IDENT | PCI_FILL_CLASS);
+
+    if (pcidev->device_class == 0x0300) {
+      printf("GPU: 0x%x\n", pcidev->device_id);
+    }
+  }
+  pci_cleanup(pciaccess);
+  return 0;
+}
+*/
 int main(void) {
   struct directories directory;
   struct numbers integer;
@@ -157,6 +201,9 @@ int main(void) {
   find_prompts_path(&directory);
   count_files(&directory, &integer);
 
+  /*
+   * prints out the file chosen.
+   */
   char *chosenfile = filetoarray(&directory, &integer);
   if (chosenfile != NULL) {
     strcat(directory.prompt_path, "/");
@@ -174,5 +221,11 @@ int main(void) {
     }
     fclose(fPointer);
   }
+
+  // system info:
+  printf("\nSystem Info:\n");
+
+  getCPUinfo();
+  // getGPUinfo();
   return 0;
 }
