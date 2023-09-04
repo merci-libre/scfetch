@@ -1,8 +1,11 @@
 #include <dirent.h>
-#include <pci/pci.h>
+#include <errno.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/sysinfo.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 /* Hey y'all.
@@ -165,7 +168,7 @@ int getCPUinfo() {
       char *modelname = strstr(line, ":");
       if (modelname != NULL) {
         modelname += 2;
-        printf("CPU Model: %s\n", modelname);
+        printf("CPU Model: %s", modelname);
         break;
       }
     }
@@ -194,9 +197,37 @@ int getGPUinfo() {
   return 0;
 }
 */
+int uptime(long seconds_uptime) {
+  /* TODO:
+   URGENT BUGS:
+   - after 60, seconds_uptime gets set to 1
+   Non-Urgent
+   - switch over to switch/case format.
+   - enable accurate time using modulo operations.
+
+   such as the format: 6 days, 23 hours, 30 minutes, 45 seconds,
+
+*/
+  if (seconds_uptime <= 60) {
+    // seconds
+    printf("Uptime: %ld seconds\n", seconds_uptime);
+  } else if (seconds_uptime <= 3600) {
+    // minutes
+    printf("Uptime: %ld minutes\n", seconds_uptime / 60);
+  } else if (seconds_uptime <= 86400) {
+    // hours
+    printf("Uptime: %ld hours\n", seconds_uptime / 3600);
+  } else if (seconds_uptime <= 604800) {
+    printf("Uptime: %ld days\n", seconds_uptime / 86400);
+  }
+
+  return 0;
+};
+
 int main(void) {
   struct directories directory;
   struct numbers integer;
+  struct sysinfo info;
   findhomedir(&directory);
   find_prompts_path(&directory);
   count_files(&directory, &integer);
@@ -224,8 +255,14 @@ int main(void) {
 
   // system info:
   printf("\nSystem Info:\n");
-
+  // uptime(info.uptime); Defunct, see uptime(); for more information.
   getCPUinfo();
-  // getGPUinfo();
+  sysinfo(&info);
+
+  // memory information
+  printf("Memory Available: %ld GiB\n", info.freeram / 1024 / 1024 / 1024);
+  printf("Total Memory Available: %ld GiB\n",
+         info.totalram / 1024 / 1024 / 1024);
+
   return 0;
 }
