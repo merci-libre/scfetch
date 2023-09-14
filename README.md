@@ -1,6 +1,6 @@
 # scfetch
 
-Current version: 0.0.3
+Current version: 0.3
 An entire re-implementation of sfetch written in C-Lang.
 Currently only supports art prompts, but will introduce more features later.
 
