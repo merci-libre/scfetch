@@ -199,28 +199,32 @@ int getGPUinfo() {
 */
 int uptime(long seconds_uptime) {
   /* TODO:
-   URGENT BUGS:
-   - after 60, seconds_uptime gets set to 1
-   Non-Urgent
-   - switch over to switch/case format.
-   - enable accurate time using modulo operations.
-
-   such as the format: 6 days, 23 hours, 30 minutes, 45 seconds,
-
+  Urgent
+  - None, woohoo!
+  Non-Urgent
+   - switch over to switch/case format instead of else/if.
 */
-  if (seconds_uptime <= 60) {
+
+  ulong seconds = seconds_uptime % 60;
+  ulong minutes = (seconds_uptime % 3600) / 60;
+  ulong hours = (seconds_uptime % 86400) / 3600;
+  ulong days = seconds_uptime / 86400;
+
+  // print uptime
+  if (seconds_uptime < 60) {
     // seconds
     printf("Uptime: %ld seconds\n", seconds_uptime);
-  } else if (seconds_uptime <= 3600) {
+  } else if (seconds_uptime < 3600) {
     // minutes
-    printf("Uptime: %ld minutes\n", seconds_uptime / 60);
-  } else if (seconds_uptime <= 86400) {
+    printf("Uptime: %ld minutes, %ld seconds\n", minutes, seconds);
+  } else if (seconds_uptime < 86400) {
     // hours
-    printf("Uptime: %ld hours\n", seconds_uptime / 3600);
-  } else if (seconds_uptime <= 604800) {
-    printf("Uptime: %ld days\n", seconds_uptime / 86400);
+    printf("Uptime: %ld hours, %ld minutes, %ld seconds\n", hours, minutes,
+           seconds);
+  } else if (seconds_uptime >= 86400) {
+    printf("Uptime: %ld days, %ld hours, %ld minutes, %ld seconds\n", days,
+           hours, minutes, seconds);
   }
-
   return 0;
 };
 
@@ -232,9 +236,6 @@ int main(void) {
   find_prompts_path(&directory);
   count_files(&directory, &integer);
 
-  /*
-   * prints out the file chosen.
-   */
   char *chosenfile = filetoarray(&directory, &integer);
   if (chosenfile != NULL) {
     strcat(directory.prompt_path, "/");
@@ -253,11 +254,11 @@ int main(void) {
     fclose(fPointer);
   }
 
-  // system info:
-  printf("\nSystem Info:\n");
-  // uptime(info.uptime); Defunct, see uptime(); for more information.
-  getCPUinfo();
+  // system sysinfo(&info); info:
   sysinfo(&info);
+  printf("\nSystem Info:\n");
+  uptime(info.uptime); // Defunct, see uptime(); for more information.
+  getCPUinfo();
 
   // memory information
   printf("Memory Available: %ld GiB\n", info.freeram / 1024 / 1024 / 1024);
