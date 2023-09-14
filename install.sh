@@ -17,11 +17,11 @@ function making() { #Makes the script executable
 	gcc ./main.c -o scfetch
 }
 
-function moving() { #Moves the script into /usr/bin
+function moving() { #Moves the script into /usr/local/bin
 
-	# if the file is detected in /usr/bin, ask if overwrite is ok.
+	# if the file is detected in /usr/local/bin, ask if overwrite is ok.
 	if [[ -f /usr/local/bin/scfetch ]]; then
-		echo -e "// there already is a file named 'scfetch' detected in /usr/bin \n Do you wish to overwrite this file? [y/N]"
+		echo -e "// there already is a file named 'scfetch' detected in /usr/local/bin \n Do you wish to overwrite this file? [y/N]"
 		read -s -n1 yn
 		if [[ $yn == "y" ]] || [[ $yn == "Y" ]]; then #Overwrite
 			echo "Overwriting 'scfetch' in /usr/local/bin"
