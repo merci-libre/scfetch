@@ -6,7 +6,7 @@
 # 1. 'main.c' File is made an executable
 #	2. shell config file is detected and a line is added invoking the shell.
 #	3. if you would like to only install the command, install manually.
-#	4. create a linked file in .config/shellrandomgreeter to easily append to /usr/bin/scfetch
+#	4. create a linked file in .config/shellrandomgreeter to easily append to /usr/local/bin/scfetch
 
 echo "Starting Install..."
 echo "Making scfetch executable"
@@ -20,20 +20,20 @@ function making() { #Makes the script executable
 function moving() { #Moves the script into /usr/bin
 
 	# if the file is detected in /usr/bin, ask if overwrite is ok.
-	if [[ -f /usr/bin/scfetch ]]; then
+	if [[ -f /usr/local/bin/scfetch ]]; then
 		echo -e "// there already is a file named 'scfetch' detected in /usr/bin \n Do you wish to overwrite this file? [y/N]"
 		read -s -n1 yn
 		if [[ $yn == "y" ]] || [[ $yn == "Y" ]]; then #Overwrite
-			echo "Overwriting 'scfetch' in /usr/bin"
+			echo "Overwriting 'scfetch' in /usr/local/bin"
 			sleep 2
-			sudo cp --remove-destination "$PWD"/scfetch /usr/bin
+			sudo cp --remove-destination "$PWD"/scfetch /usr/local/bin/
 		elif [[ $yn == "n" ]] || [[ $yn == "N" ]]; then #Don't overwrite
 			echo -e "Overwrite cancelled. \n Exiting Script..."
 		else
 			echo "Unknown Input, Exiting Script..."
 		fi
 	else
-		sudo cp "$PWD"/scfetch /usr/bin
+		sudo cp "$PWD"/scfetch /usr/local/bin/
 		yn="y"
 	fi
 
