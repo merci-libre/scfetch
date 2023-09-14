@@ -12,10 +12,10 @@ chmod +x install.sh
 or you can manually make the file with:
 ```
 gcc main.c -o scfetch
-sudo cp scfetch /usr/bin
+sudo cp scfetch /usr/local/bin
 ```
 however, it is recommended that you install the program using the install script as 
-the install script manually makes the required directories for the software to work.
+the install script automatically makes the required directories for the software to work.
 
 ## About the program:
 
@@ -25,6 +25,21 @@ In other words, all you need is a text file in the directory `$HOME/.config/shel
 
 Currently this project is in it's infancy so there still needs to be a roll-out to the development. Currently, the project is in what I call 'stage-0' which translates into an 'in-development' phase.
 I open-sourced the project to keep track of the progress for both future employers, and myself.
+
+## Manual Installation
+The installation process is pretty easy if you want to do it manually.
+
+The program searches for the following directory:
+`/home/{user}/.config/shellrandomgreeter/prompts`, then searches for files within this directory to write out
+in plaintext to your terminal. 
+### Installing to *nix system
+  1. In your terminal enter the following command `$ mkdir -p $HOME/.config/shellrandomgreeter/prompts`
+  2. Create a prompt in `$HOME/.config/shellrandomgreeter/prompts/` with `$ touch $HOME/.config/shellrandomgreeter/prompts/{prompt_name}`
+  3. Fill prompt with text.
+### Compiling the binary
+  1. Compile the binary in the git folder with `gcc -o scfetch main.c`
+  2. move the binary to /usr/local/bin
+Voila. Installation complete!
 
 ### Adding prompts
 
