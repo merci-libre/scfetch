@@ -1,6 +1,6 @@
 # scfetch
 ![alt text](https://github.com/merci-libre/scfetch/blob/main/blobs/screenshot_077.png)
-### Current version: 0.3
+### Current version: 0.7
 An entire re-implementation of sfetch written in C-Lang.
 Currently only supports art prompts, but will introduce more features later.
 
@@ -41,9 +41,16 @@ in plaintext to your terminal.
   2. move the binary to /usr/local/bin
 Voila. Installation complete!
 
+
+### Usage
+Once you have the binary installed, you can invoke it in your shell with `scfetch`.
+Running the command `scfetch -h` will provide you with a help menu for the options.
+If you would like to get a specific prompt, you can list out the index with `scfetch -l`
+and choose the index number with `scfetch -f <index number>`
+
 ### Adding prompts
 
-in `$HOME/.config/shellrandomgreeter/prompts`, do the following:
+In `$HOME/.config/shellrandomgreeter/prompts`, do the following:
 ```
 touch {file_name}
 ```
