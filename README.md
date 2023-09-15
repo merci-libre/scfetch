@@ -1,5 +1,5 @@
 # scfetch
-![alt text](https://github.com/merci-libre/scfetch/blob/main/blobs/screenshot_077.png)
+![alt text](https://github.com/merci-libre/scfetch/blob/main/blobs/screenshot_079.png)
 ### Current version: 0.7
 An entire re-implementation of sfetch written in C-Lang.
 Currently only supports art prompts, but will introduce more features later.
