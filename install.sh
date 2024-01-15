@@ -207,9 +207,9 @@ if making; then #If making() is successful:
 	if moving && [[ $yn == "y" ]] || [[ $yn == "Y" ]]; then #if moving() is successful:
 		echo -e "\nSuccess!\n---"
 		echo -e "creating config files..."
-		mkdir "$HOME"/.config/shellrandomgreeter
-		mkdir "$HOME"/.config/shellrandomgreeter/indexing
-		mkdir "$HOME"/.config/shellrandomgreeter/prompts
+		mkdir -p "$HOME"/.config/shellrandomgreeter
+		mkdir -p "$HOME"/.config/shellrandomgreeter/indexing
+		mkdir -p "$HOME"/.config/shellrandomgreeter/prompts
 		echo "Copying sampleprompt files into config folder..."
 		cp sampleprompts/* "$HOME"/.config/shellrandomgreeter/prompts
 		echo "Would you like to add scfetch to your config file?"
