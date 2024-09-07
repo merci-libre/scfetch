@@ -5,14 +5,33 @@
  *
  * - get pci card information to print GPU model.
  * - give the prompt some color
- * - give the
+ *
+ *
+ *
+ *
+ * - give the user the ability to set a user-defined directory.
+ * such as :
+ *
+ * `scfetch -s /home/user/$DIR`
+ *
+ * and from $DIR,
+ * determine if the user wants to define a specified order
+ * of reading the file, or to randomly select a file for the user.
+ *
+ * - give the user the ability to write out the specified file:
+ *
+ *   `scfetch -r  $FILE`
+ *
+ *
+ *
+ *
+ *
  *
  *
  * */
 
 // C-Standard libs
 #include <dirent.h>
-#include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,13 +51,18 @@
  * are calling throughout development.
  * */
 struct directories {
-  char homedirectory;
-  char promptsdirectory;
-  char prompt_path[512];
+  char home_directory;
+  char config_directory;
+  char chosen_prompt_path[512];
 };
 struct numbers {
   int files;
 };
+
+struct args {
+  int debug;
+  int r_flag;
+} args;
 
 int findhomedir(struct directories *directory) {
   // config folder
@@ -47,32 +71,31 @@ int findhomedir(struct directories *directory) {
 
   // check if user has a home directory.
   DIR *homed = opendir(homedir);
-  // printf("finding home folder...\n");
 
   if (homed == NULL) {
     perror("ERROR: Home directory does not exist \n");
     exit(1);
   }
   closedir(homed);
-  strcpy(directory->prompt_path, homedir);
+  strcpy(directory->chosen_prompt_path, homedir);
 
   return 0;
 }
 
 // check if `.config/sfetch/prompts` exists.
-int find_prompts_path(struct directories *directory, int debug) {
+int find_prompts_path(struct directories *directory) {
   const char *path_to_directory = "/.config/shellrandomgreeter/prompts";
-  strcat(directory->prompt_path, path_to_directory);
+  strcat(directory->chosen_prompt_path, path_to_directory);
 
-  DIR *prompts_exist = opendir(directory->prompt_path);
+  DIR *prompts_exist = opendir(directory->chosen_prompt_path);
 
   if (prompts_exist == NULL) {
     perror("prompts folder does not exist");
     exit(1);
   }
   closedir(prompts_exist);
-  if (debug == 1) {
-    printf("prompts folder located at: %s\n", directory->prompt_path);
+  if (args.debug == 1) {
+    printf("prompts folder located at: %s\n", directory->chosen_prompt_path);
   }
   return 0;
 }
@@ -86,14 +109,14 @@ int find_prompts_path(struct directories *directory, int debug) {
  * */
 
 int count_files(struct directories *directory, struct numbers *integer,
-                int debug, int l_flag) {
+                int l_flag) {
 
   int file_count = 0;
-  if (debug == 1) {
-    printf("counting the files in %s...\n", directory->prompt_path);
+  if (args.debug == 1) {
+    printf("counting the files in %s...\n", directory->chosen_prompt_path);
   }
   DIR *prompts_directory;
-  prompts_directory = opendir(directory->prompt_path);
+  prompts_directory = opendir(directory->chosen_prompt_path);
   struct dirent *entry;
   struct dirent *d_name;
 
@@ -101,7 +124,7 @@ int count_files(struct directories *directory, struct numbers *integer,
     if (entry->d_type == DT_REG) {
       if (entry->d_name[0] != '.') {
         file_count++;
-        if (debug == 1) {
+        if (args.debug == 1) {
           printf("index %d : %s\n", file_count, entry->d_name);
         }
       } else {
@@ -113,8 +136,8 @@ int count_files(struct directories *directory, struct numbers *integer,
   if (l_flag == 1) {
     exit(0);
   }
-  if (debug == 1) {
-    printf("files in %s: %d\n", directory->prompt_path, file_count);
+  if (args.debug == 1) {
+    printf("files in %s: %d\n", directory->chosen_prompt_path, file_count);
   }
   integer->files = file_count;
 
@@ -140,9 +163,8 @@ void free_mem(char **filenames, int size) {
   }
 }
 
-char *randomfilegenerator(char **filenames, int size, int debug,
-                          int user_file) {
-  if ((user_file == -1) && (debug == 1)) {
+char *randomfilegenerator(char **filenames, int size, int user_file) {
+  if ((user_file == -1) && (args.debug == 1)) {
     printf("seeding %d to number generator...\n", size);
   }
   int random_index;
@@ -158,14 +180,14 @@ char *randomfilegenerator(char **filenames, int size, int debug,
     random_index = user_file - 1;
   }
 
-  if (debug == 1) {
+  if (args.debug == 1) {
     printf("number chosen for array is:  %d\n", random_index + 1);
   }
   return filenames[random_index];
 }
 
 char *choosefile(struct directories *directory, struct numbers *integer,
-                 int user_file, int debug) {
+                 int user_file) {
   /* Developer notes:
    *  if there are no arguments given to option -f to print a specific file,
    *  this code is called to choose a random file from an
@@ -174,10 +196,13 @@ char *choosefile(struct directories *directory, struct numbers *integer,
   int pf = integer->files;
   char *chosenfile;
   char **filenames = dynamic_table(pf); // allocate memory to array
+  // open the directory containing the outputted image.
   DIR *prompts_directory;
-  prompts_directory = opendir(directory->prompt_path);
+  prompts_directory = opendir(directory->chosen_prompt_path);
   int index = 0;
   struct dirent *entry;
+  // read the directory in order to remove all 'Hidden' and 'Unix Directory
+  // Shortcut' files.
   while ((entry = readdir(prompts_directory)) != NULL) {
     if (entry->d_type == DT_REG) {
       if (entry->d_name[0] != '.') {
@@ -189,10 +214,14 @@ char *choosefile(struct directories *directory, struct numbers *integer,
   closedir(prompts_directory);
   srand(time(NULL));
 
-  if (user_file == 0) {
-    chosenfile = randomfilegenerator(filenames, pf, debug, 0);
-  } else {
-    chosenfile = randomfilegenerator(filenames, pf, debug, user_file);
+  switch (user_file) {
+  case '0':
+    chosenfile = randomfilegenerator(filenames, pf, 0);
+    break;
+
+  default:
+    chosenfile = randomfilegenerator(filenames, pf, user_file);
+    break;
   }
   return chosenfile;
 }
@@ -220,31 +249,8 @@ int getCPUinfo() {
   return 0;
 }
 
-/* does not work, keep commented out.
-int getGPUinfo() {
-  struct pci_access *pciaccess;
-  struct pci_dev *pcidev;
-
-  pciaccess = pci_alloc();
-  pci_init(pciaccess);
-  pci_scan_bus(pciaccess);
-
-  for (pcidev = pciaccess->devices; pcidev; pcidev->next++) {
-    pci_fill_info(pcidev, PCI_FILL_IDENT | PCI_FILL_CLASS);
-
-    if (pcidev->device_class == 0x0300) {
-      printf("GPU: 0x%x\n", pcidev->device_id);
-    }
-  }
-  pci_cleanup(pciaccess);
-  return 0;
-}
-*/
-
 int uptime(long seconds_uptime) {
   /* TODO:
-  Urgent
-  - None, woohoo!
   Non-Urgent
    - switch over to switch/case format instead of else/if.
 */
@@ -290,7 +296,19 @@ int uptime(long seconds_uptime) {
  *
  * */
 
-int printprompt(int debug, int user_file, int arguments) {
+void readfile(char *_path) {
+  FILE *fPointer;
+  fPointer = fopen(_path, "r");
+  if (fPointer != NULL) {
+    char c;
+    while ((c = fgetc(fPointer)) != EOF) {
+      putchar(c);
+    }
+    fclose(fPointer);
+  }
+}
+
+int printprompt(int user_file, int arguments, int custom) {
   char *user = getenv("USER");
   char hostname[1024];
   gethostname(hostname, 1024);
@@ -301,33 +319,31 @@ int printprompt(int debug, int user_file, int arguments) {
   struct numbers integers;
   struct sysinfo info;
   struct utsname k_info;
-  findhomedir(&directory);
-  find_prompts_path(&directory, debug);
-  count_files(&directory, &integers, debug, 0);
-  char *chosenfile = choosefile(&directory, &integers, user_file, debug);
-  if (chosenfile != NULL) {
-    strcat(directory.prompt_path, "/");
-    strcat(directory.prompt_path, chosenfile);
-  } else {
-    printf("Files not found! Is the directory empty?\n");
-  }
+  printf("\033[48;5;236m\033[38;5;011mWelcome %s@%s!\n\n\033[0m", user,
+         hostname);
+  if (args.r_flag != 0) {
 
-  FILE *fPointer;
-  printf("\033[41mWelcome %s@%s!\n\n\033[0m", user, hostname);
-  fPointer = fopen(directory.prompt_path, "r");
-  if (fPointer != NULL) {
-    char c;
-    while ((c = fgetc(fPointer)) != EOF) {
-      putchar(c);
+    findhomedir(&directory);
+    find_prompts_path(&directory);
+    count_files(&directory, &integers, 0);
+    char *chosenfile = choosefile(&directory, &integers, user_file);
+    if (chosenfile != NULL) {
+      strcat(directory.chosen_prompt_path, "/");
+      strcat(directory.chosen_prompt_path, chosenfile);
+    } else {
+      printf("Files not found! Is the directory empty?\n");
     }
-    fclose(fPointer);
+
+    // print information to screen.
+    // read the textfile out.
+    readfile(directory.chosen_prompt_path);
+    printf("\n\033[48;5;236m\033[38;5;011mSystem Info:\n\n\033[0m");
   }
 
   // system calls:
   sysinfo(&info);
   uname(&k_info);
 
-  printf("\n\033[41mSystem Info:\n\n\033[0m");
   // kernel information
   printf("Kernel version: %s %s\n", k_info.release, k_info.sysname);
 
@@ -342,16 +358,21 @@ int printprompt(int debug, int user_file, int arguments) {
   printf("Total Memory Available: %ld GiB\n",
          info.totalram / 1024 / 1024 / 1024);
 
-  if (debug == 1) {
+  if (args.debug == 1) {
     printf("\nDEBUGGING INFORMATION:\n");
-    printf("file chosen: %s\n", directory.prompt_path);
+    if (args.r_flag != 0) {
+      printf("file chosen: %s\n", directory.chosen_prompt_path);
+    }
     printf("arguments counted=%d\n", arguments - 1);
+    printf("value of custom: %d\n", custom);
   }
 
   return 0;
 }
 
 void printhelp() {
+  char *user = getenv("USER");
+  // prints out the help menu to show command line arguments.
   printf("usage: scfetch | scfetch [OPTIONS] | scfetch -f [index number]\n\n");
   printf("options:\n");
   printf("-f : When given an integer, -f prints out the prompt at the "
@@ -359,36 +380,44 @@ void printhelp() {
   printf("-h : Prints help menu.\n");
   printf("-l : Lists the files index array.\n");
   printf("-v : Be verbose.\n");
+  printf("-c : print out a secondary prompt at the bottom.\n");
+  printf("-r : Only print system information.\n");
+  printf("\n\nexample command with custom text: scfetch -c "
+         "/home/%s/<file_to_read>\n",
+         user);
 }
 
 int main(int argc, char *argv[]) {
-  int debug = 0;
+  args.debug = 0;
+  args.r_flag = 1;
   int user_file = -1;
   // if the command is run without any arguments, execute normally.
   // argument variables
   int option;
   int f_flag = 0;
+  int custom = 0;
 
   struct directories directory;
   struct numbers integers;
   findhomedir(&directory);
-  find_prompts_path(&directory, debug);
+  find_prompts_path(&directory);
 
-  while ((option = getopt(argc, argv, "vhf:l")) != -1) {
+  // check user's arguments
+  while ((option = getopt(argc, argv, "vrhf:l")) != -1) {
     switch (option) {
-    case 'h':
+    case 'h': // prints the help menu
       printhelp();
       exit(0);
       break;
-    case 'v':
-      debug = 1;
+    case 'v': // Be verbose
+      args.debug = 1;
       break;
-    case 'f':
+    case 'f': // Prints the prompt at specified index.
       if (f_flag) {
         printf("option -f detected, but no flag given.\n");
         exit(1);
       } else {
-        f_flag++;
+        f_flag++; // raise f_flag
       }
       if ((strcmp(optarg, "0") == 0) || atoi(optarg) <= 0) {
         printf("You cannot print an empty/negative index.\n");
@@ -397,19 +426,22 @@ int main(int argc, char *argv[]) {
         user_file = atoi(optarg);
       }
       break;
-    case 'l':
-      count_files(&directory, &integers, 1, 1);
+    case 'l': // Lists the files in order and their index.
+      count_files(&directory, &integers, 1);
       exit(1);
       break;
-
-    default:
+    case 'r':
+      args.r_flag = 0;
+      break;
+    default: // no argument is given.
       printf("Invalid Option\n");
       printhelp();
       exit(2);
+      break;
     }
   }
 
-  printprompt(debug, user_file, argc);
+  printprompt(user_file, argc, custom);
 }
 
 /* Hey y'all.
